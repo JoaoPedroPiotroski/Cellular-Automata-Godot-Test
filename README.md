@@ -1,7 +1,14 @@
 
 ## Godot Cellular Automata Test
 A simple cellular automata simulation, it has 3 simple elements that interact by simple rules based on their neighboring tiles.
-To select one of them, press a numerical key, according to the following:
+To select one of them, press a numerical key, according to the following table:
+
+| Key |Particle | Moves to | Switches with |
+|--|--|--|--|
+|1| Sand | down, down-left, down-right | water, gas |
+|2| Water | down, down-left, down-right, left, right | gas |
+|3| Gas | up, up-left, up-right, left, right | - |
+
 
  1. Sand: Moves down, down-left, and down-right. Switches places with Water, Gas
  2. Water: Moves down, down-left, down-right, left, and right. Switches places with Gas
