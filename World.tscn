@@ -1,0 +1,167 @@
+[gd_scene load_steps=10 format=2]
+
+[ext_resource path="res://Grid.gd" type="Script" id=1]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform sampler2D grid;
+uniform int x_size = 300;
+uniform int y_size = 120;
+
+uniform float num_particle_types = 3.0;
+
+void fragment () {
+	vec4 color = texture(grid, UV);
+	if (abs(abs(color.r * num_particle_types) - 1.0) < 0.2) {
+		color = vec4(0.8, 0.8, 0.2, 1.0);
+	}
+	if (abs(abs(color.r * num_particle_types) - 2.0) < 0.2) {
+		color = vec4(0.0, 0.0, 1.0, 1.0);
+	}
+	if (abs(abs(color.r * num_particle_types) - 3.0) < 0.2) {
+		color = vec4(1.0, 1.0, 1.0, 1.0);
+	}
+	COLOR = color;
+}"
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = SubResource( 1 )
+shader_param/x_size = 300
+shader_param/y_size = 120
+shader_param/num_particle_types = 3.0
+
+[sub_resource type="Shader" id=3]
+
+[sub_resource type="ShaderMaterial" id=4]
+shader = SubResource( 3 )
+
+[sub_resource type="Shader" id=7]
+code = "shader_type canvas_item;
+
+uniform float v = 1.0; 
+uniform float size = 10.0;
+void fragment() {
+	vec4 c = textureLod(SCREEN_TEXTURE, SCREEN_UV, 0.0);
+	for (float x = -size; x < size; x++)
+	{
+		for (float y = -size; y < size; y++)
+		{
+			if (x*x + y*y > size*size){continue;}
+			vec4 new_c = texture(SCREEN_TEXTURE, SCREEN_UV+SCREEN_PIXEL_SIZE*vec2(x, y));
+			if (length(new_c) >length(c)){
+				c = new_c;
+			}
+		}
+	}
+	COLOR = c;
+	
+}"
+
+[sub_resource type="ShaderMaterial" id=8]
+shader = SubResource( 7 )
+shader_param/v = 1.0
+shader_param/size = 4.0
+
+[sub_resource type="Shader" id=5]
+code = "shader_type canvas_item;
+
+uniform int strength: hint_range(1, 512) = 2;
+
+vec4 blur_size(sampler2D tex,vec2 fragCoord, vec2 pixelSize) {
+    
+    vec4 color = vec4(0.,0.,0.,0.);
+    float strengthFloat = float(strength);	
+
+    vec2 pixel = fragCoord/pixelSize;
+    int x_min = max(int(pixel.x-strengthFloat), 0);
+    int x_max = min(int(pixel.x+strengthFloat), int(1./pixelSize.x));
+    int y_min = max(int(pixel.y-strengthFloat), 0);
+    int y_max = min(int(pixel.y+strengthFloat), int(1./pixelSize.y));
+
+    int count =0;
+
+    // Sum the pixels colors
+    for(int x=x_min; x <= x_max; x++) {
+        for(int y = y_min; y <= y_max; y++) {           
+            color += texture(tex, vec2(float(x), float(y)) * pixelSize);
+            count++;
+        }
+    }
+    
+    // Divide the color by the number of colors you summed up
+    color /= float(count);
+    
+    return color;
+}
+
+void fragment() {	
+    COLOR = blur_size(SCREEN_TEXTURE,SCREEN_UV,SCREEN_PIXEL_SIZE);
+}"
+
+[sub_resource type="ShaderMaterial" id=6]
+shader = SubResource( 5 )
+shader_param/strength = 2
+
+[node name="World" type="Node2D"]
+
+[node name="Grid" type="Node2D" parent="."]
+script = ExtResource( 1 )
+
+[node name="MouseSpawnerTimer" type="Timer" parent="Grid"]
+
+[node name="top_left" type="Position2D" parent="Grid"]
+
+[node name="bottom_right" type="Position2D" parent="Grid"]
+position = Vector2( 1026, 601 )
+
+[node name="UpdateVisual" type="Timer" parent="Grid"]
+wait_time = 0.1
+autostart = true
+
+[node name="FrameUpdateTimer" type="Timer" parent="Grid"]
+wait_time = 0.05
+autostart = true
+
+[node name="ForceUpdate" type="Timer" parent="Grid"]
+wait_time = 5.0
+autostart = true
+
+[node name="Sprite" type="Sprite" parent="Grid"]
+centered = false
+
+[node name="ColorRect" type="ColorRect" parent="Grid"]
+material = SubResource( 2 )
+margin_right = 300.0
+margin_bottom = 120.0
+mouse_filter = 2
+
+[node name="BackBufferCopy2" type="BackBufferCopy" parent="Grid"]
+visible = false
+material = SubResource( 4 )
+copy_mode = 2
+rect = Rect2( 0, 0, 300, 120 )
+
+[node name="ColorRect3" type="ColorRect" parent="Grid"]
+visible = false
+material = SubResource( 8 )
+margin_right = 300.0
+margin_bottom = 120.0
+mouse_filter = 2
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="Grid"]
+visible = false
+material = SubResource( 4 )
+copy_mode = 2
+rect = Rect2( 0, 0, 300, 120 )
+
+[node name="ColorRect2" type="ColorRect" parent="Grid"]
+visible = false
+material = SubResource( 6 )
+margin_right = 300.0
+margin_bottom = 120.0
+mouse_filter = 2
+
+[connection signal="timeout" from="Grid/UpdateVisual" to="Grid" method="_on_UpdateVisual_timeout"]
+[connection signal="timeout" from="Grid/FrameUpdateTimer" to="Grid" method="frame_update"]
+[connection signal="timeout" from="Grid/ForceUpdate" to="Grid" method="_on_ForceUpdate_timeout"]
